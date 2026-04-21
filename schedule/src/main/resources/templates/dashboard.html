@@ -2,141 +2,113 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <title>Schedule Calendar</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f7f7fb;
-            color: #222;
+            padding: 20px;
         }
 
-        h1 {
-            margin-bottom: 16px;
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
         }
 
-        .actions {
-            margin-bottom: 18px;
+        th, td {
+            border: 1px solid #888;
+            padding: 8px;
+            text-align: center;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eef;
+        }
+
+        .lesson {
+            margin-bottom: 8px;
+            padding: 6px;
+            border: 1px solid #bbb;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .subject {
+            font-weight: bold;
+        }
+
+        .nav-tabs {
+            margin-bottom: 1em;
+        }
+
+        .nav-tabs a {
+            display: inline-block;
+            margin-right: 0.5em;
+            text-decoration: none;
+            padding: 6px 10px;
+            background: #ddd;
+            border-radius: 6px;
+            color: #000;
+        }
+
+        .nav-tabs a.active {
+            background: #8eb6ff;
         }
 
         .actions a {
             display: inline-block;
             margin-right: 10px;
-            padding: 8px 14px;
             text-decoration: none;
-            background: #e6e6ff;
-            border-radius: 8px;
-            color: #222;
-        }
-
-        .card {
-            background: white;
-            padding: 18px;
-            border-radius: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            margin-bottom: 22px;
-        }
-
-        form {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        select, button {
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            background: white;
-        }
-
-        button {
-            cursor: pointer;
-            background: #4b5cff;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
-
-        th {
-            background: #f0f2ff;
         }
     </style>
 </head>
 <body>
+<h1>Schedule Calendar</h1>
 
-<h1>Schedule Dashboard</h1>
-
-<div class="actions">
-    <a href="/">All</a>
-    <a href="/sort/group">Sort by Group</a>
-    <a href="/sort/teacher">Sort by Teacher</a>
-    <a href="/sort/room">Sort by Room</a>
+<div class="nav-tabs">
+    <a th:each="d : ${days}"
+       th:href="@{/(day=${d})}"
+       th:text="${d}"
+       th:classappend="${d == selectedDay ? ' active' : ''}">
+        MONDAY
+    </a>
 </div>
 
-<div class="card">
-    <h2>Add schedule</h2>
-    <form action="/add" method="post">
-        <select name="groupId" required>
-            <option value="" disabled selected>Choose group</option>
-            <option th:each="g : ${groups}"
-                    th:value="${g.id}"
-                    th:text="${g.name}">
-            </option>
-        </select>
-
-        <select name="teacherId" required>
-            <option value="" disabled selected>Choose teacher</option>
-            <option th:each="t : ${teachers}"
-                    th:value="${t.id}"
-                    th:text="${t.name}">
-            </option>
-        </select>
-
-        <select name="roomId" required>
-            <option value="" disabled selected>Choose room</option>
-            <option th:each="r : ${rooms}"
-                    th:value="${r.id}"
-                    th:text="${r.number}">
-            </option>
-        </select>
-
-        <button type="submit">Add</button>
-    </form>
-</div>
+<p class="actions">
+    <a th:href="@{/group/add}">➕ Add Group</a>
+    <a th:href="@{/teacher/add}">➕ Add Teacher</a>
+    <a th:href="@{/room/add}">➕ Add Room</a>
+    <a th:href="@{/schedule/add}">➕ Add Lesson</a>
+</p>
 
 <table>
-    <thead>
     <tr>
         <th>Group</th>
-        <th>Teacher</th>
-        <th>Room</th>
+        <th>Lesson 1</th>
+        <th>Lesson 2</th>
+        <th>Lesson 3</th>
+        <th>Lesson 4</th>
+        <th>Lesson 5</th>
     </tr>
-    </thead>
-    <tbody>
-    <tr th:each="s : ${schedules}">
-        <td th:text="${s.group != null ? s.group.name : '-'}"></td>
-        <td th:text="${s.teacher != null ? s.teacher.name : '-'}"></td>
-        <td th:text="${s.room != null ? s.room.number : '-'}"></td>
-    </tr>
-    </tbody>
-</table>
 
+    <tr th:each="g : ${groups}">
+        <td th:text="${g.name}">Group Name</td>
+
+        <td th:each="lessonNum : ${#numbers.sequence(1,5)}">
+            <th:block th:each="s : ${schedules}">
+                <div th:if="${s.group.id == g.id and s.lesson == lessonNum}" class="lesson">
+                    <span class="subject" th:text="${s.subject}">Subject</span><br>
+                    <span th:text="${s.teacher.name}">Teacher</span><br>
+                    <span th:text="${s.room.number}">Room</span><br>
+                    <a th:href="@{'/schedule/edit/' + ${s.id}}">Edit</a>
+                    <form th:action="@{'/schedule/delete/' + ${s.id}}" method="post" style="display:inline;">
+                        <button type="submit">Del</button>
+                    </form>
+                </div>
+            </th:block>
+        </td>
+    </tr>
+</table>
 </body>
 </html>

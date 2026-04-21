@@ -1,65 +1,84 @@
 package com.example.schedule.service;
 
-import com.example.schedule.ScheduleApplication;
-import com.example.schedule.model.Group;
-import com.example.schedule.model.Room;
-import com.example.schedule.model.Schedule;
-import com.example.schedule.model.Teacher;
-import com.example.schedule.repository.GroupRepository;
-import com.example.schedule.repository.RoomRepository;
-import com.example.schedule.repository.ScheduleRepository;
-import com.example.schedule.repository.TeacherRepository;
+import com.example.schedule.model.*;
+import com.example.schedule.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 public class ScheduleService {
 
-    private final ScheduleRepository scheduleRepository;
-    private final GroupRepository groupRepository;
-    private final TeacherRepository teacherRepository;
-    private final RoomRepository roomRepository;
+    private final ScheduleRepository scheduleRepo;
+    private final GroupRepository groupRepo;
+    private final TeacherRepository teacherRepo;
+    private final RoomRepository roomRepo;
 
-    public ScheduleService(ScheduleRepository scheduleRepository,
-                           GroupRepository groupRepository,
-                           TeacherRepository teacherRepository,
-                           RoomRepository roomRepository) {
-        this.scheduleRepository = scheduleRepository;
-        this.groupRepository = groupRepository;
-        this.teacherRepository = teacherRepository;
-        this.roomRepository = roomRepository;
+    public ScheduleService(ScheduleRepository scheduleRepo,
+                           GroupRepository groupRepo,
+                           TeacherRepository teacherRepo,
+                           RoomRepository roomRepo) {
+        this.scheduleRepo = scheduleRepo;
+        this.groupRepo = groupRepo;
+        this.teacherRepo = teacherRepo;
+        this.roomRepo = roomRepo;
     }
 
-    public List<Schedule> getAll() {
-        return scheduleRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<Schedule> getByDay(ScheduleDay day) {
+        return scheduleRepo.findAllByDayWithDetails(day);
     }
 
-    public List<Schedule> sortByGroup(){
-        return scheduleRepository.findAllByOrderByGroup();
+    @Transactional(readOnly = true)
+    public Schedule getById(Long id) {
+        return scheduleRepo.findByIdWithDetails(id)
+                .orElseThrow(() -> new RuntimeException("Schedule not found: " + id));
     }
 
-    public List<Schedule> sortByTeacher(){
-        return scheduleRepository.findAllByOrderByTeacher();
-    }
-
-    public List<Schedule> sortByRoom(){
-        return scheduleRepository.findAllByOrderByRoom();
-    }
-
-    public void createEmpty(Long groupId, Long teacherId, Long roomId) {
-        Group group = groupRepository.findById(groupId)
-                        .orElseThrow(() -> new IllegalArgumentException("Group not found"));
-        Teacher teacher = teacherRepository.findById(teacherId)
-                        .orElseThrow(() -> new IllegalArgumentException("Teacher not found"));
-        Room room = roomRepository.findById(roomId)
-                        .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-        scheduleRepository.save(new Schedule());
+    @Transactional
+    public void save(Long groupId, Long teacherId, Long roomId, ScheduleDay day, int lesson, String subject) {
+        Group group = groupRepo.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found: " + groupId));
+        Teacher teacher = teacherRepo.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
+        Room room = roomRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
 
         Schedule schedule = new Schedule();
         schedule.setGroup(group);
         schedule.setTeacher(teacher);
         schedule.setRoom(room);
-        scheduleRepository.save(schedule);
+        schedule.setDay(day);
+        schedule.setLesson(lesson);
+        schedule.setSubject(subject);
+
+        scheduleRepo.save(schedule);
+    }
+
+    @Transactional
+    public void update(Long id, Long groupId, Long teacherId, Long roomId, ScheduleDay day, int lesson, String subject) {
+        Schedule schedule = getById(id);
+
+        Group group = groupRepo.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found: " + groupId));
+        Teacher teacher = teacherRepo.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
+        Room room = roomRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+
+        schedule.setGroup(group);
+        schedule.setTeacher(teacher);
+        schedule.setRoom(room);
+        schedule.setDay(day);
+        schedule.setLesson(lesson);
+        schedule.setSubject(subject);
+
+        scheduleRepo.save(schedule);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        scheduleRepo.deleteById(id);
     }
 }
